@@ -7,10 +7,10 @@ app.secret_key = "secret_key_for_testing"
 
 #--- MYSQL CONFIGURATION ---
 DB_CONFIG = {
-    "host": setup_cloud_db.DB_HOST, #localhost
-    "database": setup_cloud_db.DB_NAME, #reminderdb
-    "user": setup_cloud_db.DB_USER, #root
-    "password": setup_cloud_db.DB_PASS #Funny123$
+    "host": "reminderdb.cnq24awgwbum.us-west-1.rds.amazonaws.com", #localhost
+    "database": "reminderdb", #reminderdb
+    "user": "aaronAdmin", #root
+    "password": "reminderdb123$"
 }
 #DB_CONFIG = {
 #    "host": "localhost",
