@@ -1,11 +1,10 @@
 import mysql.connector
+from pathlib import Path
 
-# --- UPDATED CONFIGURATION ---
-DB_HOST = "reminderdb.cnq24awgwbum.us-west-1.rds.amazonaws.com" #
-DB_USER = "aaronAdmin" #
-DB_PASS = "reminderdb123$" #
-# Initial connection MUST be to 'mysql' as seen in your AWS console
-INITIAL_DB = "mysql" 
+DB_HOST = "reminderdb.cnq24awgwbum.us-west-1.rds.amazonaws.com"
+DB_USER = "aaronAdmin"
+DB_PASS = "reminderdb123$"
+INITIAL_DB = "mysql"
 DB_NAME = "reminderdb"
 
 try:
@@ -14,24 +13,32 @@ try:
         host=DB_HOST,
         user=DB_USER,
         password=DB_PASS,
-        database=INITIAL_DB, # Use system db first
+        database=INITIAL_DB,
         connect_timeout=10
     )
     cursor = conn.cursor()
-    
-    # Now create your app-specific database
-    print(f"🛠️ Creating '{DB_NAME}'...")
+
+    print(f"🛠️ Creating database '{DB_NAME}'...")
     cursor.execute(f"CREATE DATABASE IF NOT EXISTS {DB_NAME}")
     cursor.execute(f"USE {DB_NAME}")
-    
-    # Create your tables here...
-    print("📝 Creating tables...")
-    # (Insert your CREATE TABLE statements from your previous script here)
-    
+
+    print("📝 Executing schema.sql...")
+
+    schema_path = Path(__file__).parent / "schema.sql"
+    with open(schema_path, "r") as f:
+        sql = f.read()
+
+    for statement in sql.split(";"):
+        stmt = statement.strip()
+        if stmt:
+            cursor.execute(stmt)
+
     conn.commit()
     cursor.close()
     conn.close()
-    print("✅ SUCCESS! Tables created in AWS Cloud Database.")
+
+    print("✅ SUCCESS! Database and tables created.")
 
 except mysql.connector.Error as e:
-    print(f"❌ Connection Error: {e}")
+    print(f"❌ MySQL Error: {e}")
+

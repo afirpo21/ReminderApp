@@ -6,8 +6,9 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    reminder_frequency VARCHAR(20) DEFAULT 'Standard'
+    default_email VARCHAR(255) DEFAULT NULL,
+    reminder_frequency VARCHAR(20) DEFAULT 'Standard',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS reminders (
@@ -17,12 +18,9 @@ CREATE TABLE IF NOT EXISTS reminders (
     note TEXT,
     scheduled_at DATETIME NOT NULL,
     channel VARCHAR(10) CHECK (channel IN ('EMAIL', 'SMS')),
-    target_contact VARCHAR(255), 
+    target_contact VARCHAR(255),
     status VARCHAR(20) DEFAULT 'ACTIVE',
     frequency VARCHAR(20) DEFAULT 'Standard',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
-
-ALTER TABLE reminders ADD COLUMN frequency VARCHAR(20) DEFAULT 'Standard';
-ALTER TABLE users ADD COLUMN default_email VARCHAR(255) DEFAULT NULL;
