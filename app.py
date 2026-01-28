@@ -5,19 +5,19 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 app = Flask(__name__)
 app.secret_key = "secret_key_for_testing"
 
-# --- MYSQL CONFIGURATION ---
-# DB_CONFIG = {
-#     "host": setup_cloud_db.DB_HOST, #localhost
-#     "database": setup_cloud_db.DB_NAME, #reminderdb
-#     "user": setup_cloud_db.DB_USER, #root
-#     "password": setup_cloud_db.DB_PASS #Funny123$
-# }
+#--- MYSQL CONFIGURATION ---
 DB_CONFIG = {
-    "host": "localhost",
-    "database": "reminderdb",
-    "user": "root",
-    "password": "Funny123$"
+    "host": setup_cloud_db.DB_HOST, #localhost
+    "database": setup_cloud_db.DB_NAME, #reminderdb
+    "user": setup_cloud_db.DB_USER, #root
+    "password": setup_cloud_db.DB_PASS #Funny123$
 }
+#DB_CONFIG = {
+#    "host": "localhost",
+#    "database": "reminderdb",
+#    "user": "root",
+#    "password": "Funny123$"
+#}
 
 def get_db_connection():
     try:
@@ -176,5 +176,14 @@ def logout():
     session.clear()
     return redirect(url_for('home'))
 
+def get_db_connection():
+    try:
+        print("🔍 Connecting to DB:", DB_CONFIG)
+        return mysql.connector.connect(**DB_CONFIG)
+    except mysql.connector.Error as e:
+        print(f"❌ Database Error: {e}")
+        return None
+
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(host="0.0.0.0", port=5001, debug=True)
