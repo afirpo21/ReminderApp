@@ -512,19 +512,26 @@ function showTooltip(event) {
     
     const tooltipRect = tooltipElement.getBoundingClientRect();
     
-    // Calculate position
+    // Calculate horizontal position
     let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
-    const top = rect.top - tooltipRect.height - 12;
-    
-    // Constrain to viewport
     const minLeft = 10;
     const maxLeft = window.innerWidth - tooltipRect.width - 10;
     const constrainedLeft = Math.max(minLeft, Math.min(maxLeft, left));
     
+    // Calculate vertical position - FIXED: Check if there's room above
+    let top = rect.top - tooltipRect.height - 12;
+    let showBelow = false;
+    
+    // If tooltip would go off-screen above, show it below instead
+    if (top < 0) {
+        top = rect.bottom + 12;
+        showBelow = true;
+    }
+    
     tooltipElement.style.left = constrainedLeft + 'px';
     tooltipElement.style.top = top + 'px';
     
-    // Adjust arrow position
+    // Adjust arrow position and direction
     const arrow = tooltipElement.querySelector('.task-tooltip-arrow');
     const taskCenter = rect.left + (rect.width / 2);
     let arrowOffset = taskCenter - constrainedLeft;
@@ -532,7 +539,21 @@ function showTooltip(event) {
     arrow.style.left = arrowOffset + 'px';
     arrow.style.marginLeft = '-8px';
     
+    // Flip arrow if showing below
+    if (showBelow) {
+        arrow.style.borderTop = 'none';
+        arrow.style.borderBottom = '8px solid rgba(44, 62, 80, 0.98)';
+        arrow.style.bottom = 'auto';
+        arrow.style.top = '-8px';
+    } else {
+        arrow.style.borderBottom = 'none';
+        arrow.style.borderTop = '8px solid rgba(44, 62, 80, 0.98)';
+        arrow.style.top = 'auto';
+        arrow.style.bottom = '-8px';
+    }
+    
     // Show tooltip with animation
+    tooltipElement.style.opacity = '1';
     setTimeout(() => {
         tooltipElement.classList.add('show');
     }, 10);
