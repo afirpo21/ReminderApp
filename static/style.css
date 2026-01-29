@@ -775,6 +775,7 @@ label {
     max-width: 320px;
     opacity: 0;
     transition: opacity 0.2s ease;
+    display: none; /* FIXED: Added this line */
 }
 
 .task-tooltip.show {
