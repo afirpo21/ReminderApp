@@ -565,6 +565,7 @@ function showTooltip(event) {
 function hideTooltip() {
     if (tooltipElement) {
         tooltipElement.classList.remove('show');
+        tooltipElement.style.display = 'none';
     }
 }
 
