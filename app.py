@@ -1,21 +1,32 @@
+import os
 import mysql.connector
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
-app.secret_key = "secret_key_for_testing"
+app.secret_key = os.environ.get("SECRET_KEY", "secret_key_for_testing")
 
-# --- MYSQL CONFIGURATION ---
-DB_CONFIG = {
-    "host": "reminderdb.cnq24awgwbum.us-west-1.rds.amazonaws.com",
-    "database": "reminderdb",
-    "user": "aaronAdmin",
-    "password": "reminderdb123$"
-}
+# --- DATABASE CONFIGURATION ---
+# Set ENV=production on your AWS server, leave unset for local development
+if os.environ.get('ENV') == 'production':
+    DB_CONFIG = {
+        "host": "reminderdb.cnq24awgwbum.us-west-1.rds.amazonaws.com",
+        "database": "reminderdb",
+        "user": "aaronAdmin",
+        "password": "reminderdb123$"
+    }
+else:
+    # Local development configuration
+    DB_CONFIG = {
+        "host": "localhost",
+        "database": "reminderdb",
+        "user": "root",
+        "password": "Funny123$"
+    }
 
 
 def get_db_connection():
-    """Establishes and returns a MySQL database connection."""
+    """Establishes and returns a database connection."""
     try:
         return mysql.connector.connect(**DB_CONFIG)
     except mysql.connector.Error as e:
@@ -63,11 +74,36 @@ def execute_query(query, params=None, fetch_one=False, fetch_all=False, commit=F
         conn.close()
 
 
-# --- AUTH ROUTES ---
+def get_user_preferences(user_id):
+    """Retrieves user frequency and default email preferences."""
+    query = "SELECT reminder_frequency, default_email FROM users WHERE id = %s"
+    user_row = execute_query(query, (user_id,), fetch_one=True)
+    
+    if user_row:
+        return user_row.get('reminder_frequency', 'Standard'), user_row.get('default_email', '')
+    return 'Standard', ''
+
+
+def get_all_reminders(user_id):
+    """Retrieves all reminders for a user, sorted by scheduled time."""
+    query = "SELECT * FROM reminders WHERE user_id = %s ORDER BY scheduled_at ASC"
+    reminders = execute_query(query, (user_id,), fetch_all=True)
+    return reminders if reminders else []
+
+
+def get_upcoming_reminders(all_reminders, limit=5):
+    """Filters and returns upcoming reminders (future tasks within 1 hour window)."""
+    now = datetime.now()
+    one_hour_ago = now - timedelta(hours=1)
+    upcoming = [r for r in all_reminders if r['scheduled_at'] > one_hour_ago]
+    return upcoming[:limit]
+
+
+# --- AUTHENTICATION ROUTES ---
 
 @app.route('/')
 def home():
-    """Home page - redirects to dashboard if logged in, otherwise shows login."""
+    """Landing page - redirects to dashboard if logged in."""
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
     return render_template('login.html')
@@ -75,7 +111,7 @@ def home():
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
-    """Handle user registration."""
+    """User registration."""
     if request.method == 'POST':
         name = request.form['name']
         email = request.form['email']
@@ -95,7 +131,7 @@ def signup():
 
 @app.route('/login', methods=['POST'])
 def login():
-    """Handle user login."""
+    """User login."""
     email = request.form['email']
     password = request.form['password']
     
@@ -115,40 +151,23 @@ def login():
 
 @app.route('/logout')
 def logout():
-    """Handle user logout."""
+    """User logout."""
     session.clear()
     return redirect(url_for('home'))
 
 
-# --- DASHBOARD & REMINDER ROUTES ---
+# --- DASHBOARD AND REMINDER ROUTES ---
 
 @app.route('/dashboard')
 def dashboard():
-    """Main dashboard view with all reminders."""
+    """Main dashboard view."""
     if 'user_id' not in session:
         return redirect(url_for('home'))
     
-    # Fetch all reminders for the user
-    query = "SELECT * FROM reminders WHERE user_id = %s ORDER BY scheduled_at ASC"
-    all_reminders = execute_query(query, (session['user_id'],), fetch_all=True)
-    
-    if all_reminders is None:
-        return "Database Error"
-    
-    # Filter upcoming tasks (exclude tasks older than 1 hour)
-    now = datetime.now()
-    one_hour_ago = now - timedelta(hours=1)
-    upcoming_reminders = [
-        r for r in all_reminders 
-        if r['scheduled_at'] > one_hour_ago
-    ][:5]
-    
-    # Get user preferences
-    query = "SELECT reminder_frequency, default_email FROM users WHERE id = %s"
-    user_data = execute_query(query, (session['user_id'],), fetch_one=True)
-    
-    user_frequency = user_data['reminder_frequency'] if user_data else 'Standard'
-    user_email = user_data['default_email'] if user_data else ''
+    user_id = session['user_id']
+    all_reminders = get_all_reminders(user_id)
+    upcoming_reminders = get_upcoming_reminders(all_reminders)
+    user_frequency, user_email = get_user_preferences(user_id)
     
     return render_template(
         'dashboard.html',
@@ -162,7 +181,7 @@ def dashboard():
 
 @app.route('/set_frequency', methods=['POST'])
 def set_frequency():
-    """Update user's reminder frequency preference."""
+    """Updates user's reminder frequency preference."""
     if 'user_id' not in session:
         return redirect(url_for('home'))
     
@@ -177,7 +196,7 @@ def set_frequency():
 
 @app.route('/set_default_email', methods=['POST'])
 def set_default_email():
-    """Update user's default email preference."""
+    """Updates user's default email preference."""
     if 'user_id' not in session:
         return redirect(url_for('home'))
     
@@ -192,7 +211,7 @@ def set_default_email():
 
 @app.route('/create_reminder', methods=['POST'])
 def create_reminder():
-    """Create a new reminder."""
+    """Creates a new reminder."""
     if 'user_id' not in session:
         return redirect(url_for('home'))
     
@@ -208,11 +227,7 @@ def create_reminder():
         (user_id, title, note, scheduled_at, channel, target_contact, frequency) 
         VALUES (%s, %s, %s, %s, %s, %s, %s)
     """
-    execute_query(
-        query,
-        (session['user_id'], title, note, date, channel, target, frequency),
-        commit=True
-    )
+    execute_query(query, (session['user_id'], title, note, date, channel, target, frequency), commit=True)
     
     flash("Reminder set!")
     return redirect(url_for('dashboard'))
@@ -220,7 +235,7 @@ def create_reminder():
 
 @app.route('/update_reminder', methods=['POST'])
 def update_reminder():
-    """Update an existing reminder."""
+    """Updates an existing reminder."""
     if 'user_id' not in session:
         return redirect(url_for('home'))
     
@@ -249,7 +264,7 @@ def update_reminder():
 
 @app.route('/delete_reminder/<int:reminder_id>', methods=['POST'])
 def delete_reminder(reminder_id):
-    """Delete a reminder."""
+    """Deletes a reminder."""
     if 'user_id' not in session:
         return redirect(url_for('home'))
     
@@ -261,4 +276,4 @@ def delete_reminder(reminder_id):
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5001, debug=True)
+    app.run(debug=True, port=5001)
