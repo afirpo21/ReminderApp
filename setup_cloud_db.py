@@ -26,7 +26,7 @@ def execute_schema_file(cursor, schema_path):
         cursor: MySQL cursor object
         schema_path: Path to schema.sql file
     """
-    print("📝 Executing schema.sql...")
+    print("Executing schema.sql...")
     
     with open(schema_path, "r") as f:
         sql = f.read()
@@ -37,7 +37,7 @@ def execute_schema_file(cursor, schema_path):
         if stmt:  # Skip empty statements
             cursor.execute(stmt)
     
-    print("✅ Schema executed successfully")
+    print("Schema executed successfully")
 
 
 def setup_database():
@@ -48,11 +48,11 @@ def setup_database():
     cursor = None
     
     try:
-        print(f"🔌 Connecting to RDS Endpoint: {DB_CONFIG['host']}...")
+        print(f"Connecting to RDS Endpoint: {DB_CONFIG['host']}...")
         conn = mysql.connector.connect(**DB_CONFIG)
         cursor = conn.cursor()
         
-        print(f"🛠️ Creating database '{DB_NAME}'...")
+        print(f"Creating database '{DB_NAME}'...")
         cursor.execute(f"CREATE DATABASE IF NOT EXISTS {DB_NAME}")
         cursor.execute(f"USE {DB_NAME}")
         
@@ -67,20 +67,20 @@ def setup_database():
         # Commit all changes
         conn.commit()
         
-        print("✅ SUCCESS! Database and tables created.")
+        print("SUCCESS! Database and tables created.")
         
     except mysql.connector.Error as e:
-        print(f"❌ MySQL Error: {e}")
+        print(f"MySQL Error: {e}")
         if conn:
             conn.rollback()
         raise
         
     except FileNotFoundError as e:
-        print(f"❌ File Error: {e}")
+        print(f"File Error: {e}")
         raise
         
     except Exception as e:
-        print(f"❌ Unexpected Error: {e}")
+        print(f"Unexpected Error: {e}")
         if conn:
             conn.rollback()
         raise
@@ -91,7 +91,7 @@ def setup_database():
             cursor.close()
         if conn:
             conn.close()
-            print("🔌 Database connection closed")
+            print("Database connection closed")
 
 
 if __name__ == "__main__":
