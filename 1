@@ -9,7 +9,7 @@ INITIAL_DB = "mysql"
 DB_NAME = "reminderdb"
 
 try:
-    print(f"🔌 Connecting to RDS Endpoint: {DB_HOST}...")
+    print(f"Connecting to RDS Endpoint: {DB_HOST}...")
     conn = mysql.connector.connect(
         host=DB_HOST,
         user=DB_USER,
@@ -20,18 +20,18 @@ try:
     cursor = conn.cursor()
     
     # Now create your app-specific database
-    print("🛠️ Creating 'DB_NAME'...")
+    print("Creating 'DB_NAME'...")
     cursor.execute("CREATE DATABASE IF NOT EXISTS DB_NAME")
     cursor.execute("USE reminder_db")
     
     # Create your tables here...
-    print("📝 Creating tables...")
+    print(" Creating tables...")
     # (Insert your CREATE TABLE statements from your previous script here)
     
     conn.commit()
     cursor.close()
     conn.close()
-    print("✅ SUCCESS! Tables created in AWS Cloud Database.")
+    print("SUCCESS! Tables created in AWS Cloud Database.")
 
 except mysql.connector.Error as e:
-    print(f"❌ Connection Error: {e}")
+    print(f"Connection Error: {e}")
